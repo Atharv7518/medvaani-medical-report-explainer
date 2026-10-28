@@ -1,5 +1,7 @@
 import os
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+import certifi
+from dotenv import load_dotenv
 
 """
 Django settings for backend project.
@@ -18,6 +20,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
@@ -82,11 +85,14 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'medical_reports',     # The database we just created
-        'USER': 'root',                # Your MySQL username (usually 'root')
-        'PASSWORD': 'AtharvShukla751@',   # IMPORTANT: Replace with your actual MySQL password
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.getenv('TIDB_DB_NAME', 'medical_reports'),
+        'USER': os.getenv('TIDB_USER', '3pJS1yvqu52QZFH.root'),
+        'PASSWORD': os.getenv('TIDB_PASSWORD', ''), 
+        'HOST': os.getenv('TIDB_HOST', 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com'), 
+        'PORT': os.getenv('TIDB_PORT', '4000'),
+        'OPTIONS': {
+            'ssl': {'ca': certifi.where()}
+        }
     }
 }
 
