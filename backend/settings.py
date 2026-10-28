@@ -31,7 +31,11 @@ SECRET_KEY = 'django-insecure-xt+c$7!)c00)(*qq-vbp$*!my)mnbm2=fark$=3jppluun2l4b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'medvaani-medical-explainer-api.onrender.com', 
+    'localhost', 
+    '127.0.0.1'
+]
 
 
 # Application definition
