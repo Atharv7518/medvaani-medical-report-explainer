@@ -15,39 +15,44 @@ client = OpenAI(
 )
 
 def extract_text_from_pdf(file_path):
-    """Converts PDF pages into base64 images so the AI can 'see' scanned reports."""
+    """Converts PDF pages into compressed base64 images to avoid payload limits."""
     base64_images = []
     try:
         doc = fitz.open(file_path)
-        # Limit to the first 3 pages to prevent token limit errors on free models
         for page_num in range(min(3, len(doc))):
             page = doc.load_page(page_num)
-            # Zoom in 2x for better image resolution (helps AI read small test values)
-            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+            # FIX 1: Change Matrix from (2,2) to (1,1) to heavily reduce Base64 payload size
+            pix = page.get_pixmap(matrix=fitz.Matrix(1, 1))
             img_bytes = pix.tobytes("jpeg")
             base64_str = base64.b64encode(img_bytes).decode("utf-8")
             base64_images.append(base64_str)
         return base64_images
     except Exception as e:
-        print(f"PDF Image Conversion Error: {e}", flush=True)
-        return []
+        # Pass the error string forward so the next function can display it
+        return [{"error": f"PyMuPDF Error: {str(e)}"}]
 
 def parse_medical_data(base64_images):
     if not base64_images:
         return []
+        
+    # FIX 2: If the PDF reader failed, print the error to the frontend table
+    if isinstance(base64_images[0], dict) and "error" in base64_images[0]:
+        return [{
+            "test_name": "PDF_PROCESSING_ERROR",
+            "value": base64_images[0]["error"],
+            "unit": "N/A",
+            "reference_range": "N/A"
+        }]
 
-    # 1. Build the prompt text for the AI
     content_list = [
         {
             "type": "text",
-            "text": """You are an expert medical data extractor. I have attached images of a lab report.
-            Extract all standard test results from these images.
-            Return ONLY a raw JSON array of objects. Do NOT wrap the JSON in markdown blocks or backticks.
-            Required JSON Format: [{"test_name": "Hemoglobin", "value": "12.5", "unit": "g/dL", "reference_range": "12.0 - 15.5", "is_uncertain": false}]"""
+            "text": """You are a medical data extractor. Extract all test results from these images.
+            Return ONLY a raw JSON array of objects. Do not include markdown formatting or backticks.
+            Required JSON Format: [{"test_name": "Hemoglobin", "value": "12.5", "unit": "g/dL", "reference_range": "12.0 - 15.5"}]"""
         }
     ]
 
-    # 2. Attach every page image to the OpenAI request payload
     for b64_img in base64_images:
         content_list.append({
             "type": "image_url",
@@ -55,16 +60,14 @@ def parse_medical_data(base64_images):
         })
 
     try:
-        # We must use Gemini Flash here because it natively supports Vision (reading images)
         response = client.chat.completions.create(
-            model='openrouter/free', 
+            model='google/gemini-1.5-flash:free', 
             messages=[{"role": "user", "content": content_list}],
             temperature=0.1
         )
         
         output = response.choices[0].message.content.strip()
         
-        # Clean up any formatting the AI stubbornly leaves behind
         if output.startswith("```json"):
             output = output[7:-3].strip()
         elif output.startswith("```"):
@@ -74,8 +77,13 @@ def parse_medical_data(base64_images):
         return extracted_results
         
     except Exception as e:
-        print(f"Vision Data Extraction Error: {e}", flush=True)
-        return []
+        # FIX 3: If OpenRouter fails, push the exact error text to the frontend table!
+        return [{
+            "test_name": "AI_API_ERROR",
+            "value": str(e),
+            "unit": "ERROR",
+            "reference_range": "Check Model/Payload"
+        }]
 
 
 
