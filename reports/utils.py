@@ -2,57 +2,69 @@ import os
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
 import json
-import re
-import pdfplumber
+import base64
+import fitz  # PyMuPDF for rendering PDFs to images
 from openai import OpenAI
 from dotenv import load_dotenv
 
+# Initialize the new SDK Client
+load_dotenv()
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+)
+
 def extract_text_from_pdf(file_path):
-    extracted_text = ""
+    """Converts PDF pages into base64 images so the AI can 'see' scanned reports."""
+    base64_images = []
     try:
-        with pdfplumber.open(file_path) as pdf:
-            for page in pdf.pages:
-                text = page.extract_text()
-                if text:
-                    extracted_text += text + "\n"
-        
-        # --- NEW DEBUG PRINTS ---
-        print(f"\n--- DEBUG: Extracted {len(extracted_text)} characters from PDF ---")
-        print(f"--- DEBUG TEXT PREVIEW: {extracted_text[:200]} ---\n")
-        # ------------------------
-        
-        return extracted_text
+        doc = fitz.open(file_path)
+        # Limit to the first 3 pages to prevent token limit errors on free models
+        for page_num in range(min(3, len(doc))):
+            page = doc.load_page(page_num)
+            # Zoom in 2x for better image resolution (helps AI read small test values)
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+            img_bytes = pix.tobytes("jpeg")
+            base64_str = base64.b64encode(img_bytes).decode("utf-8")
+            base64_images.append(base64_str)
+        return base64_images
     except Exception as e:
-        print(f"PDF Error: {str(e)}")
-        return f"Error reading PDF: {str(e)}"
+        print(f"PDF Image Conversion Error: {e}", flush=True)
+        return []
 
-def parse_medical_data(raw_text):
-    # Failsafe for empty or heavily scanned images
-    if not raw_text or len(raw_text.strip()) < 15:
-        return [] 
+def parse_medical_data(base64_images):
+    if not base64_images:
+        return []
 
-    prompt = f"""
-    You are a medical data extractor. Extract all test results from this messy OCR text.
-    Return ONLY a raw JSON array of objects. Do not include markdown formatting, backticks, or explanations.
-    
-    Required JSON Format: 
-    [{{"test_name": "Hemoglobin", "value": "12.5", "unit": "g/dL", "reference_range": "12.0 - 15.5", "is_uncertain": false}}]
+    # 1. Build the prompt text for the AI
+    content_list = [
+        {
+            "type": "text",
+            "text": """You are an expert medical data extractor. I have attached images of a lab report.
+            Extract all standard test results from these images.
+            Return ONLY a raw JSON array of objects. Do NOT wrap the JSON in markdown blocks or backticks.
+            Required JSON Format: [{"test_name": "Hemoglobin", "value": "12.5", "unit": "g/dL", "reference_range": "12.0 - 15.5", "is_uncertain": false}]"""
+        }
+    ]
 
-    Lab Report Text:
-    {raw_text}
-    """
-    
+    # 2. Attach every page image to the OpenAI request payload
+    for b64_img in base64_images:
+        content_list.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}
+        })
+
     try:
+        # We must use Gemini Flash here because it natively supports Vision (reading images)
         response = client.chat.completions.create(
-            # Using a highly capable model for data extraction
-            model='openrouter/auto:free', 
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1 # Low temperature for strict factual extraction
+            model='openrouter/free', 
+            messages=[{"role": "user", "content": content_list}],
+            temperature=0.1
         )
         
         output = response.choices[0].message.content.strip()
         
-        # Clean up any markdown blocks the AI might accidentally wrap the JSON in
+        # Clean up any formatting the AI stubbornly leaves behind
         if output.startswith("```json"):
             output = output[7:-3].strip()
         elif output.startswith("```"):
@@ -62,16 +74,10 @@ def parse_medical_data(raw_text):
         return extracted_results
         
     except Exception as e:
-        print(f"Data Extraction Error: {e}")
+        print(f"Vision Data Extraction Error: {e}", flush=True)
         return []
 
 
-# Initialize the new SDK Client
-load_dotenv()
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-)
 
 def generate_medical_explanation(extracted_results, target_language="Hindi"):
     data_text = ""

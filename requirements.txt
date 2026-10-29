@@ -5,7 +5,7 @@ django-cors-headers
 mysqlclient
 PyMySQL
 openai
-pdfplumber
+PyMuPDF
 gTTS
 python-dotenv
 certifi
