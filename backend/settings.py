@@ -154,6 +154,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://medvaani-medical-report-explainer.vercel.app/",
 ]
 
+# Allow all frontend domains to connect to this API
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 MEDIA_URL = '/media/'
