@@ -49,7 +49,7 @@ function App() {
   const handleLogout = async () => {
     // 1. Tell the backend to record the logout time!
     try {
-      await fetch('http://127.0.0.1:8000/api/reports/logout/', {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/logout/`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       });
@@ -96,7 +96,7 @@ function App() {
 
     try {
       // ---> MAKE SURE THE HEADERS LOOK EXACTLY LIKE THIS <---
-      const response = await fetch('http://127.0.0.1:8000/api/reports/upload/', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/upload/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}` 
@@ -127,7 +127,7 @@ function App() {
 
   const fetchExtractedData = async (id) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/reports/${id}/data/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/${id}/data/`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       })
       if (response.ok) {
@@ -157,7 +157,7 @@ function App() {
     setMessage("Saving your verifications and generating explanation...")
     
     try {
-      await fetch(`http://127.0.0.1:8000/api/reports/${jobId}/data/`, {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/${jobId}/data/`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ function App() {
         body: JSON.stringify(extractedData) 
       });
 
-      const response = await fetch(`http://127.0.0.1:8000/api/reports/${jobId}/explain/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/${jobId}/explain/`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       })
@@ -186,7 +186,7 @@ function App() {
   const handleDoctorPrep = async () => {
     setMessage("Generating questions for your doctor... please wait.")
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/reports/${jobId}/doctor-prep/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/${jobId}/doctor-prep/`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       })
       if (response.ok) {
@@ -202,7 +202,7 @@ function App() {
   const loadHistory = async () => {
     setMessage("Loading your history...")
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/reports/history/', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/history/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
@@ -230,7 +230,7 @@ function App() {
     setChatQuestion('');      
     
     try {
-      const dataRes = await fetch(`http://127.0.0.1:8000/api/reports/${id}/data/`, {
+      const dataRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/${id}/data/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
@@ -240,7 +240,7 @@ function App() {
         setExtractedData(data);
       }
       
-      const expRes = await fetch(`http://127.0.0.1:8000/api/reports/${id}/explain/`, {
+      const expRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/${id}/explain/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
@@ -297,7 +297,7 @@ function App() {
     setChatAnswer(null);
     
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/reports/${jobId}/chat/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/${jobId}/chat/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

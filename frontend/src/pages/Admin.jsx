@@ -14,12 +14,12 @@ export default function Admin() {
   }, []);
 
   const loadDashboard = async () => {
-    const res = await fetch('http://127.0.0.1:8000/api/reports/evaluation/', {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/evaluation/`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     });
     if (res.ok) setDashboardData(await res.json());
 
-    const userRes = await fetch('http://127.0.0.1:8000/api/reports/admin-users/', {
+    const userRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/admin-users/`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     });
     if (userRes.ok) setUsers(await userRes.json());
@@ -27,7 +27,7 @@ export default function Admin() {
 
   const handleViewUser = async (user) => {
     setSelectedUser(user);
-    const res = await fetch(`http://127.0.0.1:8000/api/reports/admin-users/${user.id}/`, {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/admin-users/${user.id}/`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     });
     if (res.ok) setUserHistory(await res.json());
@@ -36,7 +36,7 @@ export default function Admin() {
   const handleDeleteUser = async (id, name) => {
     if (!window.confirm(`WARNING: Are you sure you want to completely delete ${name} and all their medical reports?`)) return;
 
-    const res = await fetch(`http://127.0.0.1:8000/api/reports/admin-users/${id}/`, {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/admin-users/${id}/`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
     });

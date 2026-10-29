@@ -157,7 +157,7 @@ export default function Home({
               <p className="flex items-center gap-3 text-[#17324D] font-bold text-xl mb-4 text-center">
                 <VaaniWave className="h-6" animate /> Listen to Explanation ({targetLanguage})
               </p>
-              <audio id="explanation-audio" controls src={`http://127.0.0.1:8000${explanation.audio}`} className="w-full h-14 mb-4"></audio>
+              <audio id="explanation-audio" controls src={`${import.meta.env.VITE_API_BASE_URL}${explanation.audio}`} className="w-full h-14 mb-4"></audio>
               <button
                 onClick={() => {
                   const audioEl = document.getElementById('explanation-audio');

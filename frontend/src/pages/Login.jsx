@@ -10,7 +10,7 @@ export default function Login({ onAuthSuccess, goToSignup }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/reports/login/', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/login/`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login_id: loginId, password })
       });
       const data = await res.json();
