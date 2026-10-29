@@ -33,16 +33,10 @@ def extract_text_from_pdf(file_path):
 
 def parse_medical_data(base64_images):
     if not base64_images:
-        return []
+        return [{"test_name": "IMAGE_ERROR", "value": "No images generated", "unit": "N/A", "reference_range": "N/A"}]
         
-    # FIX 2: If the PDF reader failed, print the error to the frontend table
     if isinstance(base64_images[0], dict) and "error" in base64_images[0]:
-        return [{
-            "test_name": "PDF_PROCESSING_ERROR",
-            "value": base64_images[0]["error"],
-            "unit": "N/A",
-            "reference_range": "N/A"
-        }]
+        return [{"test_name": "PDF_PROCESSING_ERROR", "value": base64_images[0]["error"], "unit": "N/A", "reference_range": "N/A"}]
 
     content_list = [
         {
@@ -68,21 +62,32 @@ def parse_medical_data(base64_images):
         
         output = response.choices[0].message.content.strip()
         
+        # Clean up Markdown
         if output.startswith("```json"):
             output = output[7:-3].strip()
         elif output.startswith("```"):
             output = output[3:-3].strip()
             
         extracted_results = json.loads(output)
+        
+        # --- THE FIX: IF THE AI RETURNS AN EMPTY LIST, SHOW US WHY ---
+        if not extracted_results:
+            return [{
+                "test_name": "AI_RETURNED_EMPTY",
+                "value": "Check Ref Range",
+                "unit": "INFO",
+                "reference_range": f"RAW AI OUTPUT: {output[:100]}"
+            }]
+            
         return extracted_results
         
     except Exception as e:
-        # FIX 3: If OpenRouter fails, push the exact error text to the frontend table!
+        # If the JSON parse fails because the AI tried to talk to us, show its message
         return [{
-            "test_name": "AI_API_ERROR",
-            "value": str(e),
+            "test_name": "JSON_PARSE_ERROR",
+            "value": "Bad Format",
             "unit": "ERROR",
-            "reference_range": "Check Model/Payload"
+            "reference_range": f"RAW TEXT: {output[:100]} | ERROR: {str(e)}"
         }]
 
 
