@@ -1,9 +1,10 @@
 import os
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
-import pdfplumber
+import json
 import re
-from openai import OpenAI  # <-- NEW PACKAGE IMPORT
+import pdfplumber
+from openai import OpenAI
 from dotenv import load_dotenv
 
 def extract_text_from_pdf(file_path):
@@ -19,31 +20,43 @@ def extract_text_from_pdf(file_path):
         return f"Error reading PDF: {str(e)}"
 
 def parse_medical_data(raw_text):
-    extracted_results = []
-    lines = raw_text.split('\n')
+    # Failsafe for empty or heavily scanned images
+    if not raw_text or len(raw_text.strip()) < 15:
+        return [] 
+
+    prompt = f"""
+    You are a medical data extractor. Extract all test results from this messy OCR text.
+    Return ONLY a raw JSON array of objects. Do not include markdown formatting, backticks, or explanations.
     
-    for line in lines:
-        match = re.search(r'([A-Za-z\s]+)\s+(\d+\.?\d*)\s+([A-Za-z/%]+)', line)
+    Required JSON Format: 
+    [{{"test_name": "Hemoglobin", "value": "12.5", "unit": "g/dL", "reference_range": "12.0 - 15.5", "is_uncertain": false}}]
+
+    Lab Report Text:
+    {raw_text}
+    """
+    
+    try:
+        response = client.chat.completions.create(
+            # Using a highly capable model for data extraction
+            model='openrouter/auto:free', 
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1 # Low temperature for strict factual extraction
+        )
         
-        if match:
-            test_name = match.group(1).strip()
-            value = match.group(2).strip()
-            unit = match.group(3).strip()
+        output = response.choices[0].message.content.strip()
+        
+        # Clean up any markdown blocks the AI might accidentally wrap the JSON in
+        if output.startswith("```json"):
+            output = output[7:-3].strip()
+        elif output.startswith("```"):
+            output = output[3:-3].strip()
             
-            if len(test_name) > 3:
-                is_uncertain = False
-                if not value.replace('.', '', 1).isdigit() or len(value) > 6:
-                    is_uncertain = True
-                
-                extracted_results.append({
-                    'test_name': test_name,
-                    'value': value,
-                    'unit': unit,
-                    'reference_range': 'Not found',
-                    'is_uncertain': is_uncertain
-                })
-                
-    return extracted_results
+        extracted_results = json.loads(output)
+        return extracted_results
+        
+    except Exception as e:
+        print(f"Data Extraction Error: {e}")
+        return []
 
 
 # Initialize the new SDK Client
