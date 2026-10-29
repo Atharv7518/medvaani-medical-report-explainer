@@ -3,7 +3,7 @@ os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
 import pdfplumber
 import re
-from google import genai  # <-- NEW PACKAGE IMPORT
+from openai import OpenAI  # <-- NEW PACKAGE IMPORT
 from dotenv import load_dotenv
 
 def extract_text_from_pdf(file_path):
@@ -48,7 +48,10 @@ def parse_medical_data(raw_text):
 
 # Initialize the new SDK Client
 load_dotenv()
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+)
 
 def generate_medical_explanation(extracted_results, target_language="Hindi"):
     data_text = ""
@@ -71,11 +74,13 @@ def generate_medical_explanation(extracted_results, target_language="Hindi"):
     
     try:
         # NEW SYNTAX
-        response = client.models.generate_content(
-            model='gemini-3.8-flash',
-            contents=prompt
+        response = client.chat.completions.create(
+            model='openrouter/free', # Replace with any OpenRouter model string
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
         )
-        return response.text
+        return response.choices[0].message.content
     except Exception as e:
         print(f"\n--- AI ERROR ---")
         print(str(e))
@@ -103,11 +108,13 @@ def generate_doctor_questions(extracted_results, target_language="Hindi"):
     
     try:
         # NEW SYNTAX
-        response = client.models.generate_content(
-            model='gemini-3.8-flash',
-            contents=prompt
+        response = client.chat.completions.create(
+            model='openrouter/free', # Replace with any OpenRouter model string
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
         )
-        return response.text
+        return response.choices[0].message.content
     except Exception as e:
         return "Sorry, we could not generate questions at this time."
 
@@ -138,10 +145,12 @@ def generate_chat_response(extracted_results, explanation_text, user_question, t
     
     try:
         # NEW SYNTAX
-        response = client.models.generate_content(
-            model='gemini-3.8-flash',
-            contents=prompt
+        response = client.chat.completions.create(
+            model='openrouter/free', # Replace with any OpenRouter model string
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
         )
-        return response.text
+        return response.choices[0].message.content
     except Exception as e:
         return "Sorry, I could not process your question right now."

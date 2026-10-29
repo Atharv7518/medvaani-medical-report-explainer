@@ -1,17 +1,25 @@
 import os
-from google import genai
+from pathlib import Path
+from openai import OpenAI
 from dotenv import load_dotenv
 
-# Fix for the Python 3.14 Protobuf issue
-os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+# Load the environment variables to get OPENROUTER_API_KEY
+env_path = Path('.env')
+load_dotenv(dotenv_path=env_path)
 
-load_dotenv() 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+# Initialize the OpenRouter client
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+)
 
-print("\n--- AVAILABLE MODELS FOR YOUR API KEY ---")
 try:
-    for model in client.models.list():
-        print(model.name)
+    print("Fetching available models from OpenRouter...\n")
+    models = client.models.list()
+    
+    # Print the ID of every available model
+    for model in models.data:
+        print(f"- {model.id}")
+        
 except Exception as e:
-    print("Error connecting to Google:", e)
-print("-----------------------------------------\n")
+    print(f"Error connecting to OpenRouter: {e}")
