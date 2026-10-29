@@ -55,7 +55,7 @@ def parse_medical_data(base64_images):
 
     try:
         response = client.chat.completions.create(
-            model='google/gemini-1.5-flash:free', 
+            model='openrouter/free', 
             messages=[{"role": "user", "content": content_list}],
             temperature=0.1
         )
@@ -82,12 +82,12 @@ def parse_medical_data(base64_images):
         return extracted_results
         
     except Exception as e:
-        # If the JSON parse fails because the AI tried to talk to us, show its message
+        # We removed the 'output' reference here so it doesn't crash on instant API failures
         return [{
-            "test_name": "JSON_PARSE_ERROR",
-            "value": "Bad Format",
+            "test_name": "API_OR_MODEL_ERROR",
+            "value": "Request Failed",
             "unit": "ERROR",
-            "reference_range": f"RAW TEXT: {output[:100]} | ERROR: {str(e)}"
+            "reference_range": str(e)
         }]
 
 
