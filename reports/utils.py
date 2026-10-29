@@ -55,7 +55,7 @@ def parse_medical_data(base64_images):
 
     try:
         response = client.chat.completions.create(
-            model='openrouter/free', 
+            model='meta-llama/llama-3.2-11b-vision-instruct:free', 
             messages=[{"role": "user", "content": content_list}],
             temperature=0.1
         )
