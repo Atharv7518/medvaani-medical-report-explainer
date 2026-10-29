@@ -15,8 +15,15 @@ def extract_text_from_pdf(file_path):
                 text = page.extract_text()
                 if text:
                     extracted_text += text + "\n"
+        
+        # --- NEW DEBUG PRINTS ---
+        print(f"\n--- DEBUG: Extracted {len(extracted_text)} characters from PDF ---")
+        print(f"--- DEBUG TEXT PREVIEW: {extracted_text[:200]} ---\n")
+        # ------------------------
+        
         return extracted_text
     except Exception as e:
+        print(f"PDF Error: {str(e)}")
         return f"Error reading PDF: {str(e)}"
 
 def parse_medical_data(raw_text):
