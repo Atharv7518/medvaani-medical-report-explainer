@@ -34,6 +34,7 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(localStorage.getItem('is_admin') === 'true');
   const [showSignup, setShowSignup] = useState(false);
 
+  const [isProcessing, setIsProcessing] = useState(false);
   // Splash Screen Timer (2.5 seconds)
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2500);
@@ -86,7 +87,8 @@ function App() {
       return
     }
 
-    setMessage("Uploading and reading document... please wait.")
+    setIsProcessing(true); // Turn on the loading state
+    setMessage("File accepted. Vision AI is processing in the background... (takes ~30s)")
     setExtractedData([])
     setExplanation(null)
 
@@ -95,24 +97,23 @@ function App() {
     formData.append('target_language', targetLanguage)
 
     try {
-      // ---> MAKE SURE THE HEADERS LOOK EXACTLY LIKE THIS <---
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/upload/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}` 
         },
-        body: formData // Note: Do NOT add 'Content-Type' manually when sending FormData!
+        body: formData
       });
 
-      if (response.ok) {
+      // Accept both 200 OK and 202 Accepted
+      if (response.ok || response.status === 202) {
         const uploadData = await response.json()
         const newJobId = uploadData.id
         setJobId(newJobId)
-        fetchExtractedData(newJobId)
+        pollForData(newJobId) // Start polling loop
       } else {
-        // If it fails, grab the error from Django so we know exactly why
+        setIsProcessing(false)
         const errorData = await response.json().catch(() => ({}));
-        console.error("Upload failed details:", errorData);
         if (response.status === 401) {
             setMessage("Session expired. Please log out and log back in to upload.");
         } else {
@@ -120,38 +121,34 @@ function App() {
         }
       }
     } catch (error) {
-      console.error("Network error during upload:", error);
+      setIsProcessing(false)
       setMessage("Error connecting to server.")
     }
   }
 
-  const fetchExtractedData = async (id) => {
+  const pollForData = async (id) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/reports/${id}/data/`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       })
       if (response.ok) {
         const data = await response.json()
-        setExtractedData(data)
         
         if (data.length === 0) {
-          setMessage("File uploaded, but we couldn't find any standard tests in it.")
+          // Data isn't ready. Check again in 3 seconds.
+          setTimeout(() => pollForData(id), 3000)
         } else {
+          // AI Finished!
+          setExtractedData(data)
+          setIsProcessing(false) // Turn off loading state
           setMessage("Success! Please verify the extracted data below.")
         }
       }
     } catch (error) {
+      setIsProcessing(false)
       setMessage("Failed to fetch extracted data.")
     }
   }
-
-  const handleValueEdit = (id, newValue) => {
-    setExtractedData(prevData => 
-      prevData.map(item => 
-        item.id === id ? { ...item, value: newValue } : item
-      )
-    );
-  };
 
   const handleExplain = async () => {
     setMessage("Saving your verifications and generating explanation...")
@@ -361,6 +358,7 @@ function App() {
               explanation={explanation} doctorQuestions={doctorQuestions} handleDoctorPrep={handleDoctorPrep}
               chatQuestion={chatQuestion} setChatQuestion={setChatQuestion} startListening={startListening}
               isListening={isListening} handleAskQuestion={handleAskQuestion} isChatting={isChatting} chatAnswer={chatAnswer}
+              isProcessing={isProcessing}
             />
           } 
         />

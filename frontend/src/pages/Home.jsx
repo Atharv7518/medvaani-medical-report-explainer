@@ -42,7 +42,8 @@ export default function Home({
   extractedData, handleValueEdit, handleExplain,
   explanation, doctorQuestions, handleDoctorPrep,
   chatQuestion, setChatQuestion, startListening, isListening,
-  handleAskQuestion, isChatting, chatAnswer
+  handleAskQuestion, isChatting, chatAnswer,
+  isProcessing
 }) {
   return (
     <div className="w-full flex flex-col items-center space-y-8 mt-4 text-[#17324D]">
@@ -101,8 +102,12 @@ export default function Home({
             </div>
           </div>
 
-          <button onClick={handleUpload} className={`w-full bg-[#0F766E] text-white font-bold text-xl py-4 px-4 min-h-[56px] rounded-xl shadow-lg hover:bg-[#0B5F59] hover:shadow-xl hover:scale-[1.02] active:scale-100 transition-all duration-300 ${focusRing}`}>
-            Upload and Extract
+          <button 
+            onClick={handleUpload} 
+            disabled={isProcessing}
+            className={`w-full text-white font-bold text-xl py-4 px-4 min-h-[56px] rounded-xl shadow-lg transition-all duration-300 ${focusRing} ${isProcessing ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#0F766E] hover:bg-[#0B5F59] hover:shadow-xl hover:scale-[1.02] active:scale-100'}`}
+          >
+            {isProcessing ? "Analyzing with AI..." : "Upload and Extract"}
           </button>
           {message && <div role="status" aria-live="polite" className="mt-6 p-4 bg-[#DDF5EF] text-[#17324D] font-semibold text-lg rounded-xl text-center border border-[#0F766E]/20">{message}</div>}
         </div>

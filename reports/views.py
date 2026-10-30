@@ -21,8 +21,40 @@ from django.utils.timezone import localtime
 from django.utils import timezone
 from django.contrib.auth.models import update_last_login
 
+import threading
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+
+def run_ai_extraction(report_job, file_path):
+    """This function runs invisibly in the background."""
+    try:
+        # 1. Read the images
+        raw_images = process_uploaded_file(file_path)
+        
+        # 2. Call OpenRouter AI
+        structured_data = parse_medical_data(raw_images)
+        
+        # 3. Save to database
+        for item in structured_data:
+            ExtractedResult.objects.create(
+                report=report_job,
+                test_name=item.get('test_name', 'Unknown'),
+                value=item.get('value', 'N/A'),
+                unit=item.get('unit', 'N/A'),
+                reference_range=item.get('reference_range', 'N/A')
+            )
+            
+        # 4. Update status so frontend knows it's done
+        report_job.status = 'VERIFICATION'
+        report_job.save()
+    except Exception as e:
+        print(f"Background Task Failed: {e}")
+
 class ReportUploadView(APIView):
     permission_classes = [IsAuthenticated]
+    
     def post(self, request):
         serializer = ReportJobSerializer(data=request.data)
         
@@ -31,28 +63,16 @@ class ReportUploadView(APIView):
             file_path = report_job.document.path
             
             if file_path.lower().endswith(('.pdf', '.png', '.jpg', '.jpeg')):
-                # 1. Read the text
-                raw_text = process_uploaded_file(file_path)
-                
-                # 2. Parse the text to find tests and values
-                structured_data = parse_medical_data(raw_text)
-                
-                # 3. Save each found test into the database
-                for item in structured_data:
-                    ExtractedResult.objects.create(
-                        report=report_job,
-                        test_name=item['test_name'],
-                        value=item['value'],
-                        unit=item['unit'],
-                        reference_range=item['reference_range']
-                    )
-                
-                # Update the status to show we finished processing
-                report_job.status = 'VERIFICATION'
-                report_job.save()
+                # Start the background thread instead of waiting!
+                thread = threading.Thread(target=run_ai_extraction, args=(report_job, file_path))
+                thread.start()
             
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
+            # Immediately return a 202 Accepted response so the UI doesn't freeze
+            return Response(
+                {"id": report_job.id, "message": "File accepted. AI is processing in the background."}, 
+                status=status.HTTP_202_ACCEPTED
+            )
+            
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ExtractedDataView(APIView):
