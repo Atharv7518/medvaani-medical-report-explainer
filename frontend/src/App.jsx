@@ -150,6 +150,14 @@ function App() {
     }
   }
 
+  const handleValueEdit = (id, newValue) => {
+    setExtractedData(prevData => 
+      prevData.map(item => 
+        item.id === id ? { ...item, value: newValue } : item
+      )
+    );
+  };
+
   const handleExplain = async () => {
     setMessage("Saving your verifications and generating explanation...")
     
