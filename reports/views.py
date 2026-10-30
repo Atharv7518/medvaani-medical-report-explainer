@@ -30,9 +30,9 @@ class ReportUploadView(APIView):
             report_job = serializer.save(user=request.user) 
             file_path = report_job.document.path
             
-            if file_path.lower().endswith('.pdf'):
+            if file_path.lower().endswith(('.pdf', '.png', '.jpg', '.jpeg')):
                 # 1. Read the text
-                raw_text = extract_text_from_pdf(file_path)
+                raw_text = process_uploaded_file(file_path)
                 
                 # 2. Parse the text to find tests and values
                 structured_data = parse_medical_data(raw_text)

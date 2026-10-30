@@ -14,22 +14,29 @@ client = OpenAI(
     api_key=os.getenv("OPENROUTER_API_KEY"),
 )
 
-def extract_text_from_pdf(file_path):
-    """Converts PDF pages into compressed base64 images to avoid payload limits."""
+def process_uploaded_file(file_path):
+    """Converts PDFs or direct images into base64 for the Vision AI."""
     base64_images = []
     try:
+        # If it's already an image, just read it directly
+        if file_path.lower().endswith(('.png', '.jpg', '.jpeg')):
+            with open(file_path, "rb") as image_file:
+                base64_str = base64.b64encode(image_file.read()).decode("utf-8")
+                base64_images.append(base64_str)
+            return base64_images
+            
+        # If it's a PDF, render the pages into images as usual
         doc = fitz.open(file_path)
         for page_num in range(min(3, len(doc))):
             page = doc.load_page(page_num)
-            # FIX 1: Change Matrix from (2,2) to (1,1) to heavily reduce Base64 payload size
             pix = page.get_pixmap(matrix=fitz.Matrix(1, 1))
             img_bytes = pix.tobytes("jpeg")
             base64_str = base64.b64encode(img_bytes).decode("utf-8")
             base64_images.append(base64_str)
         return base64_images
+        
     except Exception as e:
-        # Pass the error string forward so the next function can display it
-        return [{"error": f"PyMuPDF Error: {str(e)}"}]
+        return [{"error": f"File Processing Error: {str(e)}"}]
 
 def parse_medical_data(base64_images):
     if not base64_images:
