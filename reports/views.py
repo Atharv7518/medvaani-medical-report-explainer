@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from .serializers import ReportJobSerializer
 from .serializers import ExtractedResultSerializer, ExplanationSerializer
 from .models import ExtractedResult, Explanation, ReportJob  
-from .utils import extract_text_from_pdf, parse_medical_data, generate_medical_explanation, generate_doctor_questions, generate_chat_response
+from .utils import process_uploaded_file, parse_medical_data, generate_medical_explanation, generate_doctor_questions, generate_chat_response
 from gtts import gTTS
 from django.core.files.base import ContentFile
 import io
