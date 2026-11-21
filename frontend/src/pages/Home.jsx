@@ -123,24 +123,42 @@ export default function Home({
           <p className="text-[#64748B] mb-6">Check each value against your report. Edit anything that looks wrong.</p>
 
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-            {extractedData.map((item) => (
-              <li key={item.id} className={`rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${item.is_uncertain ? 'bg-amber-50 border-amber-300' : 'bg-white border-slate-200'}`}>
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <span className="font-bold text-[#17324D]">{item.test_name}</span>
-                  {item.is_uncertain && <span className="text-xs bg-amber-200 text-amber-900 px-2.5 py-1 rounded-full font-bold whitespace-nowrap">⚠ Please Verify</span>}
-                </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={item.value}
-                    onChange={(e) => handleValueEdit(item.id, e.target.value)}
-                    aria-label={`Value for ${item.test_name}`}
-                    className={`w-full min-w-0 p-3 border rounded-xl text-lg font-bold text-[#0F766E] transition-all duration-300 focus:border-[#0F766E] ${focusRing} ${item.is_uncertain ? 'border-amber-400 bg-amber-100' : 'border-slate-300 bg-slate-50'}`}
-                  />
-                  <span className="shrink-0 text-[#64748B] font-medium">{item.unit}</span>
-                </div>
-              </li>
-            ))}
+            {extractedData.map((item) => {
+              const isLongText = item.value && item.value.length > 35;
+              return (
+                <li
+                  key={item.id}
+                  className={`rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${isLongText ? 'sm:col-span-2' : ''} ${item.is_uncertain ? 'bg-amber-50 border-amber-300' : 'bg-white border-slate-200'}`}
+                >
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <span className="font-bold text-[#17324D]">{item.test_name}</span>
+                    {item.is_uncertain && <span className="text-xs bg-amber-200 text-amber-900 px-2.5 py-1 rounded-full font-bold whitespace-nowrap">⚠ Please Verify</span>}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {isLongText ? (
+                      <textarea
+                        rows={3}
+                        value={item.value}
+                        onChange={(e) => handleValueEdit(item.id, e.target.value)}
+                        aria-label={`Value for ${item.test_name}`}
+                        className={`w-full min-w-0 p-3 border rounded-xl text-base font-medium text-[#17324D] transition-all duration-300 focus:border-[#0F766E] ${focusRing} ${item.is_uncertain ? 'border-amber-400 bg-amber-100' : 'border-slate-300 bg-slate-50'}`}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={item.value}
+                        onChange={(e) => handleValueEdit(item.id, e.target.value)}
+                        aria-label={`Value for ${item.test_name}`}
+                        className={`w-full min-w-0 p-3 border rounded-xl text-lg font-bold text-[#0F766E] transition-all duration-300 focus:border-[#0F766E] ${focusRing} ${item.is_uncertain ? 'border-amber-400 bg-amber-100' : 'border-slate-300 bg-slate-50'}`}
+                      />
+                    )}
+                    {item.unit && item.unit !== 'N/A' && (
+                      <span className="shrink-0 text-[#64748B] font-medium">{item.unit}</span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
 
           <button onClick={handleExplain} className={`bg-[#0F766E] text-white font-bold text-lg py-4 px-6 min-h-[56px] rounded-xl shadow-lg hover:bg-[#0B5F59] hover:shadow-xl hover:scale-[1.02] active:scale-100 transition-all duration-300 w-full ${focusRing}`}>

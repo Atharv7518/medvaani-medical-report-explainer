@@ -48,9 +48,18 @@ def parse_medical_data(base64_images):
     content_list = [
         {
             "type": "text",
-            "text": """You are a medical data extractor. Extract all test results from these images.
-            Return ONLY a raw JSON array of objects. Do not include markdown formatting or backticks.
-            Required JSON Format: [{"test_name": "Hemoglobin", "value": "12.5", "unit": "g/dL", "reference_range": "12.0 - 15.5"}]"""
+            "text": """You are an expert medical document extractor. Analyze the provided medical report image(s).
+The report may be EITHER:
+1. A standard tabular lab report (e.g., CBC, Blood Sugar, LFT) with numeric values, units, and reference ranges.
+2. A descriptive/narrative report (e.g., Histopathology, Ultrasound, X-Ray, MRI, Discharge Summary) written in paragraphs.
+
+Return ONLY a raw JSON array of objects with these exact keys: "test_name", "value", "unit", "reference_range".
+Do not include markdown formatting or backticks.
+
+Rules:
+- For TABULAR reports: Extract each test normally (e.g., [{"test_name": "Hemoglobin", "value": "12.5", "unit": "g/dL", "reference_range": "12.0 - 15.5"}]).
+- For NARRATIVE/PARAGRAPH reports: Use the section heading as "test_name" (e.g., "Specimen", "Gross Examination", "Microscopic Findings", "Diagnosis", "Impression"), put the full finding or paragraph text in "value", and set "unit" and "reference_range" to "".
+- Never return an empty array if medical findings or a diagnosis are visible."""
         }
     ]
 
