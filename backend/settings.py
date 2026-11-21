@@ -151,7 +151,7 @@ MAILERS = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://medvaani-medical-report-explainer.vercel.app/",
+    "https://medvaani-medical-report-explainer.vercel.app",
 ]
 
 # Allow all frontend domains to connect to this API

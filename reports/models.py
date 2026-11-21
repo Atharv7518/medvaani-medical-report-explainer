@@ -43,7 +43,7 @@ class ExtractedResult(models.Model):
     
     # The actual data we want to extract
     test_name = models.CharField(max_length=255)
-    value = models.CharField(max_length=100)
+    value = models.TextField()
     unit = models.CharField(max_length=100, blank=True, null=True)
     reference_range = models.CharField(max_length=255, blank=True, null=True)
     
